@@ -12,5 +12,5 @@ class FaceLandmarkDetector:
         shape = self.predictor(gray_frame, rect)
         shape = face_utils.shape_to_np(shape)
         mouth = shape[48:68]
-        (mx, my, mw, mh) = cv2.boundingRect(mouth)
-        return (mx, my, mw, mh)
+        #(mx, my, mw, mh) = cv2.boundingRect(mouth)
+        return mouth
