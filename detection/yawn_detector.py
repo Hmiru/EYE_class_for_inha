@@ -24,15 +24,3 @@ class YawnDetector:
 
         return mar
 
-    def detect_yawn(self, gray_frame, mouth_landmarks,frame):
-        #(mx, my, mw, mh) = mouth_box
-        #mouth = gray_frame[my:my+mh, mx:mx+mw]g
-        mar = self.calculate_mar(mouth_landmarks,frame)
-        ##print(mar)
-        if mar > self.yawn_threshold:
-            self.frame_count += 1
-            if self.frame_count >= self.consecutive_frames:
-                return True, mar
-        else:
-            self.frame_count = 0
-        return False, mar
