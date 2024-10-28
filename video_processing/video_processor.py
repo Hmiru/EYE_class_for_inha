@@ -1,9 +1,11 @@
 import cv2
+from EYE_class_for_inha.calculation.focus_tracker import FocusTracker
+
 
 
 class VideoProcessor:
     def __init__(self, video_capture_handler, face_detector, mouth_detector, yawn_detector, yawn_counter,
-                 face_box_provider=None):
+                 face_box_provider=None, skip_frames=2):
         self.video_capture_handler = video_capture_handler
         self.face_detector = face_detector
         self.mouth_detector = mouth_detector
@@ -13,6 +15,11 @@ class VideoProcessor:
 
         # 각 사람별로 하품 상태와 프레임 수를 저장하는 리스트
         self.people_status = {} # 사람별로 하품 상태와 프레임 수를 저장하는 dictionary
+
+        self.skip_frames = skip_frames  # 프레임 스킵 주기
+        self.frame_count = 0  # 현재 프레임 카운트
+        self.focus_tracker = FocusTracker(k_minutes=1, wY=1.0, wE=1.0)  # FocusTracker 초기화, k_minutes는 최근 집중도 기준 시간
+
     def assign_id(self, faces_bounding_boxes):
         """얼굴에 ID를 할당"""
         stuents_data = []
@@ -32,8 +39,11 @@ class VideoProcessor:
             frame = self.video_capture_handler.get_frame()
             if frame is None:
                 break
+            if self.frame_count % self.skip_frames != 0:
+                self.frame_count += 1
+                continue
 
-            frame = cv2.resize(frame, (800, 600))  # 프레임 리사이즈
+            frame = cv2.resize(frame, (400, 300))  # 프레임 리사이즈
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # 그레이스케일 변환
 
             # 얼굴 바운딩 박스 탐지
@@ -109,20 +119,35 @@ class VideoProcessor:
         status = self.people_status[student_id]
 
         if mar > self.yawn_detector.yawn_threshold:
-            status['frame_count'] += 1
-            if status['frame_count'] >= self.yawn_detector.consecutive_frames:
-                if not status ['is_yawning']:
+            if not status['is_yawning']:
+                # 연속된 프레임 기준 충족 시 하품 상태로 전환
+                status['frame_count'] += 1
+                if status['frame_count'] >= self.yawn_detector.consecutive_frames:
                     self.yawn_counter.increment()
                     status['is_yawning'] = True
                     status['yawn_counter'] += 1
+                    status['frame_count'] = 0  # 초기화
+            else:
+                # 입을 계속 벌리고 있는 상태에서는 frame_count 증가하지 않음
+                status['frame_count'] = 0
         else:
+            # 입을 다물면 하품 상태 해제
             status['frame_count'] = 0
             status['is_yawning'] = False
 
         yawn_count=status['yawn_counter']
+        self.focus_tracker.update_focus(student_id, yawn_count, 0)  # 눈 감음 데이터는 0으로 가정
+        focus_scores = self.focus_tracker.get_focus(student_id)
+
+        cumulative_focus = focus_scores["cumulative"]
+        recent_focus = focus_scores["recent"]
+
         cv2.putText(frame, f"ID: {student_id} Yawn Count: {yawn_count}",
-                    (10, 60+ (student_id % 5)*30),
+                    (10, 60 + (student_id % 5) * 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, f"ID: {student_id} Cumulative: {cumulative_focus:.1f} Recent: {recent_focus:.1f}",
+                    (10, 90 + (student_id % 5) * 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
 
     def _process_students(self, frame, gray, student_data):
         for student_id, bbox in student_data:

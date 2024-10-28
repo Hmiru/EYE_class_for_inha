@@ -6,15 +6,14 @@ from video_processing.video_processor import VideoProcessor
 from detection.yawning_counter import yawningCounter
 
 if __name__ == "__main__":
-    video_capture_handler = VideoCaptureHandler("video_image/2girls_yawning.mp4")
+    # video_capture_handler = VideoCaptureHandler("video_image/2girls_yawning.mp4")  # 파일 영상
+    video_capture_handler = VideoCaptureHandler(0)  # 웹캠을 사용하려면 0으로 설정
+    print("Handler initialized.")
     face_detector = FaceDetector()
     mouth_detector = MouthDetector("predictor/shape_predictor_68_face_landmarks.dat")
-    yawn_detector = YawnDetector(yawn_threshold=0.5, consecutive_frames=7)
+    yawn_detector = YawnDetector(yawn_threshold=0.75, consecutive_frames=7)
 
     yawn_counter = yawningCounter()
-
-    # face_boxes = [(100, 100, 200, 200), (300, 300, 400, 400)]
-    # face_box_provider = FaceBoxProvider(face_boxes)
 
     video_processor = VideoProcessor(
         video_capture_handler,
