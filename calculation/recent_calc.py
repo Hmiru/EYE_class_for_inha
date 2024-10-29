@@ -1,30 +1,27 @@
-from .calculator import Calculator
+from collections import deque
+from datetime import datetime, timedelta
+from .calculator import Calculator  # 추상 클래스 Calculator를 가져옴
 
-class RecentCalculator(Calculator):
-
+class RecentCalculator(Calculator):  # Calculator 추상 클래스 상속
     def __init__(self, k_minutes, w1=1.0, w2=1.0):
-        super().__init__()
+        super().__init__(w1, w2)  # 부모 클래스의 초기화 호출
         self.k_minutes = k_minutes
-        self.weight_yawn = w1
-        self.weight_closed_eyes = w2
-        self.recent_yawn_events = []
-        self.recent_closed_eye_events = []
+        self.event_queue = deque()  # 제한 없이 deque 생성
+        self.time_window = timedelta(minutes=k_minutes)  # 최근 K분 설정
 
     def update_events(self, yawn_count, closed_eye_count):
         """
         Updates recent events by adding the latest counts and keeping only the last K minutes of data.
 
-        :param yawn_count: Yawn events in the current minute.
-        :param closed_eye_count: Closed-eye events in the current minute.
+        :param yawn_count: Yawn events in the current time period.
+        :param closed_eye_count: Closed-eye events in the current time period.
         """
-        self.recent_yawn_events.append(yawn_count)
-        self.recent_closed_eye_events.append(closed_eye_count)
+        now = datetime.now()
+        self.event_queue.append({'yawn_count': yawn_count, 'closed_eye_count': closed_eye_count, 'timestamp': now})
 
-        # Remove the oldest entry if it exceeds the K-minute window
-        if len(self.recent_yawn_events) > self.k_minutes:
-            self.recent_yawn_events.pop(0)
-        if len(self.recent_closed_eye_events) > self.k_minutes:
-            self.recent_closed_eye_events.pop(0)
+        # K분이 넘는 이벤트 제거
+        while self.event_queue and (now - self.event_queue[0]['timestamp']) > self.time_window:
+            self.event_queue.popleft()
 
     def calculate_score(self):
         """
@@ -32,8 +29,8 @@ class RecentCalculator(Calculator):
 
         :return: Recent focus score.
         """
-        total_recent_yawns = sum(self.recent_yawn_events)
-        total_recent_closed_eyes = sum(self.recent_closed_eye_events)
+        total_recent_yawns = sum(event['yawn_count'] for event in self.event_queue)
+        total_recent_closed_eyes = sum(event['closed_eye_count'] for event in self.event_queue)
 
         weighted_sum = self._apply_weights(total_recent_yawns, total_recent_closed_eyes)
         score = max(0, 100 - weighted_sum)  # Ensure score does not drop below 0

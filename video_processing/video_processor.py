@@ -2,8 +2,8 @@ import cv2
 from EYE_class_for_inha.calculation.focus_tracker import FocusTracker
 
 
-
 class VideoProcessor:
+
     def __init__(self, video_capture_handler, face_detector, mouth_detector, yawn_detector, yawn_counter,
                  face_box_provider=None, skip_frames=2):
         self.video_capture_handler = video_capture_handler
@@ -117,7 +117,7 @@ class VideoProcessor:
             self.people_status[student_id] = {'is_yawning': False, 'frame_count': 0, 'yawn_counter': 0}
 
         status = self.people_status[student_id]
-
+        new_yawn_detected = False
         if mar > self.yawn_detector.yawn_threshold:
             if not status['is_yawning']:
                 # 연속된 프레임 기준 충족 시 하품 상태로 전환
@@ -127,6 +127,8 @@ class VideoProcessor:
                     status['is_yawning'] = True
                     status['yawn_counter'] += 1
                     status['frame_count'] = 0  # 초기화
+                    new_yawn_detected = True  # 새 하품 탐지
+
             else:
                 # 입을 계속 벌리고 있는 상태에서는 frame_count 증가하지 않음
                 status['frame_count'] = 0
@@ -135,8 +137,9 @@ class VideoProcessor:
             status['frame_count'] = 0
             status['is_yawning'] = False
 
+        self.focus_tracker.update_focus(student_id, new_yawn_detected, 0)
+
         yawn_count=status['yawn_counter']
-        self.focus_tracker.update_focus(student_id, yawn_count, 0)  # 눈 감음 데이터는 0으로 가정
         focus_scores = self.focus_tracker.get_focus(student_id)
 
         cumulative_focus = focus_scores["cumulative"]
