@@ -20,7 +20,6 @@ class YawnDetector:
 
         mar = (A + B) / (2.0 * C)
 
-        print(mar)
 
         return mar
 
