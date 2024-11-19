@@ -49,9 +49,9 @@ class AbsencePrevention:
                 recognized_name = student_id
         return recognized_name
 
-    def absence_prevention_live(self, frame, max_absence_time=30):
+    def absence_prevention_live(self, frame, max_absence_time=5):
         recognized_faces_info = []  # List to store recognized face info per frame
-
+        absence_detected=False
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = self.face_cascade.detectMultiScale(gray, 1.04, 5, minSize=(30, 30))
 
@@ -80,14 +80,15 @@ class AbsencePrevention:
         for student_id, last_time in self.last_seen.items():
             time_diff = current_time - last_time
             if time_diff > max_absence_time:
+                absence_detected=True
                 print(f"{student_id} 이탈 감지! {time_diff:.2f}초 동안 감지되지 않음.")
-                cv2.putText(frame, f"{student_id} 이탈 감지!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.putText(frame, f"{student_id} absent detected!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
         # Example output
         print("현재 프레임에서 인식된 얼굴 정보:", recognized_faces_info)
 
 
-        return recognized_faces_info
+        return recognized_faces_info,absence_detected
 
 
 

@@ -1,10 +1,15 @@
+import sqlite3
+from datetime import datetime
+
 import cv2
 from EYE_class_for_inha.calculation.focus_tracker import FocusTracker
 from dlib import correlation_tracker, rectangle
 from EYE_class_for_inha.monitoring.prevent_to_go_out import AbsencePrevention
+import time
 class VideoProcessor:
 
-    def __init__(self, video_capture_handler, face_detector, mouth_detector, eye_detector, yawn_detector, eye_closed_detector, absence_prevention, skip_frames=2):
+    def __init__(self, video_capture_handler, face_detector, mouth_detector, eye_detector, yawn_detector,
+                 eye_closed_detector, absence_prevention, registered_students, skip_frames=2):
         self.video_capture_handler = video_capture_handler
         self.face_detector = face_detector
         self.mouth_detector = mouth_detector
@@ -13,10 +18,15 @@ class VideoProcessor:
         self.eye_closed_detector = eye_closed_detector
         self.absence_prevention = absence_prevention
         self.trackers = {}
-        self.people_status = {} # 사람별로 하품 상태와 프레임 수를 저장하는 dictionary
-        self.skip_frames = skip_frames  # 프레임 스킵 주기
-        self.frame_count = 0  # 현재 프레임 카운트
-        self.focus_trackers = {}  # 사람별로 하품 상태를 추적하는 FocusTracker 객체
+        self.people_status = {}
+        self.skip_frames = skip_frames
+        self.frame_count = 0
+        self.focus_trackers = {}
+
+        self.last_seen = {}
+        self.registered_students = registered_students
+        self.start_time = time.time()  # 출석 시작 시간 기록
+        self.initial_status_set = set()  # 최초로 출석 상태를 설정한 학생 ID 집합
 
     def process(self):
         """비디오 프레임을 처리하고, 얼굴과 하품을 탐지하는 메인 루프"""
@@ -32,7 +42,7 @@ class VideoProcessor:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # 그레이스케일 변환
 
             # 얼굴 바운딩 박스 탐지
-            recognized_faces_info = self.absence_prevention.absence_prevention_live(frame)
+            recognized_faces_info,absence_detected  = self.absence_prevention.absence_prevention_live(frame)
             print(recognized_faces_info)
             # 각 얼굴에 대해 하품 감지 및 상태 처리
             self._process_students(frame, gray, recognized_faces_info)
@@ -43,6 +53,7 @@ class VideoProcessor:
                 break
 
         self.video_capture_handler.release()
+        cv2.destroyAllWindows()
 
     def sync_people_status(self, faces_bounding_boxes):
         """탐지된 얼굴 수에 맞게 상태 리스트를 동기화"""
@@ -69,6 +80,20 @@ class VideoProcessor:
             status[frame_count] = 0
             status[is_active_key] = False
         return new_event_detected
+
+
+        # 눈 감김 상태 업데이트 (EAR은 임계값 이하 시 활성화)
+        new_eye_closed_detected = self._update_status    (
+            status, ear, self.eye_closed_detector.eye_threshold, self.eye_closed_detector.consecutive_frames,
+            'is_eye_closed', 'eye_frame_count', 'eye_closed_counter', above_threshold=False
+        )
+
+        self.focus_trackers[student_id].update_focus(student_id, new_yawn_detected, new_eye_closed_detected)
+
+        yawn_count=status['yawn_counter']
+        eye_count=status['eye_closed_counter']
+
+        focus_scores = self.focus_trackers[student_id].get_focus(student_id)
 
     def _update_student_status(self, student_id, mar,ear,frame):
         if student_id not in self.people_status:
@@ -98,9 +123,20 @@ class VideoProcessor:
         eye_count=status['eye_closed_counter']
 
         focus_scores = self.focus_trackers[student_id].get_focus(student_id)
-
-
     def _process_students(self, frame, gray, student_data):
+        conn = sqlite3.connect("attendance.db")
+        cursor = conn.cursor()
+
+        current_time = time.time()
+
+        # Mark all students as absent initially
+        for student_id in self.registered_students:
+            if student_id not in self.last_seen or current_time - self.last_seen[student_id] > 5:
+                cursor.execute('''
+                            INSERT OR REPLACE INTO attendance (student_id, status, time, last_seen_time, presence_status, recent_focus, cumulative_focus)
+                            VALUES (?, '결석', NULL, NULL, 'Absent', NULL, NULL)
+                        ''', (student_id,))
+                conn.commit()
 
         for face_info in student_data:
             student_id = face_info ["student_id"]
@@ -137,7 +173,32 @@ class VideoProcessor:
             focus_scores = self.focus_trackers[student_id].get_focus(student_id)
             cumulative_focus = focus_scores["cumulative"]
             recent_focus = focus_scores["recent"]
+            # Status update based on presence tracking
+            self.last_seen[student_id] = current_time
+            first_seen_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            time_since_start = current_time - self.start_time
+            if student_id not in self.initial_status_set:
+                # 최초 인식 시에만 출석 상태 업데이트
+                if time_since_start > 300:  # 5분이 지난 후 얼굴 인식 시 지각 처리
+                    status = "지각"
+                else:
+                    status = "출석"
+                self.initial_status_set.add(student_id)
+            else:
+                # 이후로는 상태를 변경하지 않음
+                cursor.execute("SELECT status FROM attendance WHERE student_id = ?", (student_id,))
+                status = cursor.fetchone()[0]
 
+            last_seen_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            presence_status = "Present"
+
+            cursor.execute('''
+                INSERT OR REPLACE INTO attendance (student_id, status, time, last_seen_time, presence_status, recent_focus, cumulative_focus)
+                VALUES (?, ?, COALESCE((SELECT time FROM attendance WHERE student_id = ?), ?), ?, ?, ?, ?)
+            ''', (student_id, status, student_id, first_seen_time, last_seen_time, presence_status, recent_focus,
+                  cumulative_focus))
+
+            conn.commit()
             # 학생 정보 출력
             self.display_student_info(frame, student_id, yawn_count, eye_count, cumulative_focus, recent_focus, bbox)
     def display_student_info(self, frame, student_id, yawn_count, eye_count, cumulative_focus, recent_focus, bbox):

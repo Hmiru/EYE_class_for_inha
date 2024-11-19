@@ -7,9 +7,17 @@ from detection.eye_closed_detector import EyeClosedDetector
 from detection.face_landmark_detector import FaceLandmarkDetector
 from video_processing.video_processor import VideoProcessor
 from monitoring.prevent_to_go_out import AbsencePrevention  # AbsencePrevention import 추가
+from database.database_utils import initialize_db, load_registered_students
 import torch
+import threading
+from database.attendance_gui import AttendanceGUI  # AttendanceGUI import 추가
+import tkinter as tk  # tkinter import 추가
 
 if __name__ == "__main__":
+    initialize_db()
+
+    registered_students = load_registered_students("register/registered_faces.pkl")
+
     #video_capture_handler = VideoCaptureHandler("video_image/2girls_yawning.mp4")  # 파일 영상
     video_capture_handler = VideoCaptureHandler(0)  # 웹캠을 사용하려면 0으로 설정
 
@@ -33,7 +41,25 @@ if __name__ == "__main__":
         eye_detector,
         yawn_detector,
         eye_closed_detector,
-        absence_prevention=absence_prevention
+        absence_prevention=absence_prevention,
+        registered_students=registered_students
     )
 
-    video_processor.process()
+    root = tk.Tk()
+    gui = AttendanceGUI(root)
+
+
+    def update_gui():
+        gui.update_table()
+        root.after(1000, update_gui)
+
+
+    # Start GUI in the main thread
+    update_gui()
+
+    # Start video processing in a separate thread
+    video_thread = threading.Thread(target=video_processor.process, daemon=True)
+    video_thread.start()
+
+    # Start GUI
+    root.mainloop()
