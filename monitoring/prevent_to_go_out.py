@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 from PIL import Image
 import sys
 import os
-from EYE_class_for_inha.register.model import MobileFaceNet
+from register.model import MobileFaceNet
 from scipy.spatial.distance import cosine
 import pickle
 import time
@@ -59,6 +59,8 @@ class AbsencePrevention:
         recognized_faces_info.clear()  # Reset for each frame
 
         for (x, y, w, h) in faces:
+            #draw rec
+            #cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
             x2, y2 = x + w, y + h  # x2, y2를 계산하여 (x, y, x2, y2) 형식으로 변환
             face_img = frame[y:y2, x:x2]
             face_pil = Image.fromarray(face_img).convert('RGB')
@@ -68,6 +70,7 @@ class AbsencePrevention:
                 new_embedding = self.model(face_tensor).cpu().numpy()
 
             recognized_name = self.recognize_face(new_embedding)
+            #cv2.putText(frame, recognized_name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             if recognized_name:
                 self.last_seen[recognized_name] = current_time
 

@@ -14,10 +14,11 @@ from database.attendance_gui import AttendanceGUI  # AttendanceGUI import 추가
 import tkinter as tk  # tkinter import 추가
 
 if __name__ == "__main__":
-    initialize_db()
+    #initialize_db()
 
     registered_students = load_registered_students("register/registered_faces.pkl")
 
+    #video_capture_handler = VideoCaptureHandler("video_image/three.mp4")  # 파일 영상
     #video_capture_handler = VideoCaptureHandler("video_image/2girls_yawning.mp4")  # 파일 영상
     video_capture_handler = VideoCaptureHandler(0)  # 웹캠을 사용하려면 0으로 설정
 
@@ -44,22 +45,34 @@ if __name__ == "__main__":
         absence_prevention=absence_prevention,
         registered_students=registered_students
     )
+    
+    video_processor.process()
+    # root = tk.Tk()
+    # gui = AttendanceGUI(root)
 
-    root = tk.Tk()
-    gui = AttendanceGUI(root)
+    # def update_gui():
+    #     gui.update_table()
+    #     root.after(2000, update_gui)  # GUI 갱신 주기를 2초로 설정
 
+    # def on_closing():
+    #     """GUI 창 닫을 때 종료 처리를 위한 함수."""
+    #     print("프로그램 종료 중...")
+    #     video_processor.video_capture_handler.release()
+    #     root.destroy()
+    #     exit(0)
 
-    def update_gui():
-        gui.update_table()
-        root.after(1000, update_gui)
+    # root.protocol("WM_DELETE_WINDOW", on_closing)
 
+    # # Start GUI in the main thread
+    # update_gui()
 
-    # Start GUI in the main thread
-    update_gui()
+    # # Start video processing in a separate thread
+    # video_thread = threading.Thread(target=video_processor.process, daemon=True)
+    # video_thread.start()
 
-    # Start video processing in a separate thread
-    video_thread = threading.Thread(target=video_processor.process, daemon=True)
-    video_thread.start()
+    # # Start database fetching in a separate thread
+    # db_thread = threading.Thread(target=fetch_db_data, args=(gui,), daemon=True)
+    # db_thread.start()
 
-    # Start GUI
-    root.mainloop()
+    # # Start GUI
+    # root.mainloop()

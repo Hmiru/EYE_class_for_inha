@@ -40,19 +40,39 @@ def extract_embedding(image_path, model, device, preprocess):
 
 def register_faces(directory_path, model, device, preprocess):
     registered_faces = {}
+    registration_summary = {}  # 학번별 성공 및 전체 수 저장
+
     for student_id in os.listdir(directory_path):
         student_dir = os.path.join(directory_path, student_id)
+        total_images = 0
+        successful_images = 0
+
         for image_name in os.listdir(student_dir):
             image_path = os.path.join(student_dir, image_name)
+            total_images += 1
             embedding = extract_embedding(image_path, model, device, preprocess)
             if embedding is not None:
                 registered_faces[student_id] = embedding
+                successful_images += 1
                 print(f"학번 {student_id}의 얼굴이 {image_name}에서 등록되었습니다.")
             else:
-                print(f"{image_name}에서 얼굴을 감지하지 못했습니다.")
+                print(f"{image_name}에서 {student_id}의 얼굴을 감지하지 못했습니다.")
 
+        # 성공 및 전체 수 저장
+        registration_summary[student_id] = {
+            "total": total_images,
+            "successful": successful_images
+        }
     with open('registered_faces.pkl', 'wb') as f:
         pickle.dump(registered_faces, f)
+        
+    print("\n등록 요약:")
+    for student_id, summary in registration_summary.items():
+        total = summary["total"]
+        successful = summary["successful"]
+        success_rate = (successful / total) * 100 if total > 0 else 0
+        print(f"학번 {student_id}: 성공률 {success_rate:.2f}% ({successful}/{total})")
+
 
 def main():
     preprocess = transforms.Compose([
@@ -66,6 +86,5 @@ def main():
 
     directory_path = 'test/'
     register_faces(directory_path, model, device, preprocess)
-
 if __name__ == "__main__":
     main()

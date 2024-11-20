@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from EYE_class_for_inha.detection.face_landmark_detector import FaceLandmarkDetector
+from detection.face_landmark_detector import FaceLandmarkDetector
 class EyeClosedDetector:
     def __init__(self, eye_threshold=0.2, consecutive_frames=7):
         self.eye_threshold = eye_threshold

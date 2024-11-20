@@ -8,7 +8,7 @@ os.makedirs(train_data_dir, exist_ok=True)
 
 # 카메라 시작
 cap = cv2.VideoCapture(0)
-num_images = 10  # 각 사람당 10장의 이미지 캡처
+num_images = 100  # 각 사람당 10장의 이미지 캡처
 count = 0
 
 while count < num_images:
@@ -28,7 +28,7 @@ while count < num_images:
 
     # 10장 촬영 후 자동 종료
     if count >= num_images:
-        print("Captured 100 images. Exiting...")
+        print(f"Captured {num_images} images. Exiting...")
         break
 
     # 'q' 키를 누르면 강제 종료

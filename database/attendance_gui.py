@@ -2,6 +2,8 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, simpledialog
 
+import queue
+
 class AttendanceGUI:
     def __init__(self, root):
         self.root = root
@@ -18,16 +20,19 @@ class AttendanceGUI:
         self.tree.pack(fill=tk.BOTH, expand=True)
         self.tree.bind("<Double-1>", self.on_double_click)
 
+        # 새로운 메모리 캐시
+        self.data_queue = queue.Queue()
+
     def update_table(self):
-        for i in self.tree.get_children():
-            self.tree.delete(i)
-        conn = sqlite3.connect("attendance.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM attendance")
-        rows = cursor.fetchall()
-        for row in rows:
-            self.tree.insert("", tk.END, values=row)
-        conn.close()
+        """캐시에서 데이터를 읽어와 GUI를 업데이트"""
+        while not self.data_queue.empty():
+            data = self.data_queue.get()
+            self.tree.insert("", tk.END, values=data)
+
+    def refresh_data(self, db_data):
+        """외부에서 데이터베이스 결과를 받아 캐시에 저장"""
+        for row in db_data:
+            self.data_queue.put(row)
 
     def on_double_click(self, event):
         try:
@@ -41,6 +46,5 @@ class AttendanceGUI:
                 cursor.execute("UPDATE attendance SET status = ? WHERE student_id = ?", (new_status, student_id))
                 conn.commit()
                 conn.close()
-                self.update_table()
         except IndexError:
             pass
