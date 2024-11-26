@@ -8,7 +8,7 @@ class Calculator(ABC):
     Provides a template for calculating scores based on certain parameters.
     """
 
-    def __init__(self, weight_yawn=1.0, weight_closed_eyes=1.0):
+    def __init__(self, weight_yawn=1.0):
         """
         Initialize with weights for yawn and closed eyes events.
 
@@ -16,10 +16,10 @@ class Calculator(ABC):
         :param weight_closed_eyes: Weight for closed eyes events.
         """
         self.weight_yawn = weight_yawn
-        self.weight_closed_eyes = weight_closed_eyes
+
 
     @abstractmethod
-    def calculate_score(self, yawn_count, closed_eyes_count):
+    def calculate_score(self, yawn_count):
         """
         Abstract method to calculate score. Must be implemented by subclasses.
 
@@ -29,7 +29,7 @@ class Calculator(ABC):
         """
         pass
 
-    def _apply_weights(self, yawn_count, closed_eyes_count):
+    def _apply_weights(self, yawn_count):
         """
         Apply weights to the counts.
 
@@ -37,4 +37,4 @@ class Calculator(ABC):
         :param closed_eyes_count: Number of times eyes were closed.
         :return: Weighted sum of yawn and closed eyes counts.
         """
-        return (self.weight_yawn * yawn_count) + (self.weight_closed_eyes * closed_eyes_count)
+        return (self.weight_yawn * yawn_count)

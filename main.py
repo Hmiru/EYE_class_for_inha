@@ -2,8 +2,6 @@ from video_processing.video_capture_handler import VideoCaptureHandler
 from detection.face_detector import FaceDetector
 from detection.mouth_detector import MouthDetector
 from detection.yawn_detector import YawnDetector
-from detection.eye_detector import EyeDetector
-from detection.eye_closed_detector import EyeClosedDetector
 from detection.face_landmark_detector import FaceLandmarkDetector
 from video_processing.video_processor import VideoProcessor
 from monitoring.prevent_to_go_out import AbsencePrevention  # AbsencePrevention import 추가
@@ -14,7 +12,8 @@ from database.attendance_gui import AttendanceGUI  # AttendanceGUI import 추가
 import tkinter as tk  # tkinter import 추가
 
 if __name__ == "__main__":
-    #initialize_db()
+    initialize_db()
+
 
     registered_students = load_registered_students("register/registered_faces.pkl")
 
@@ -25,11 +24,8 @@ if __name__ == "__main__":
     print("Handler initialized.")
     face_detector = FaceDetector()
     mouth_detector = MouthDetector("predictor/shape_predictor_68_face_landmarks.dat")
-    eye_detector = EyeDetector("predictor/shape_predictor_68_face_landmarks.dat")
-
     yawn_detector = YawnDetector(yawn_threshold=0.7, consecutive_frames=10)
-    eye_closed_detector = EyeClosedDetector(eye_threshold=0.15, consecutive_frames=20)
-
+    
     absence_prevention = AbsencePrevention(
         weights_path="register/model_mobilefacenet.pth",
         registered_faces_path="register/registered_faces.pkl",
@@ -39,40 +35,27 @@ if __name__ == "__main__":
         video_capture_handler,
         face_detector,
         mouth_detector,
-        eye_detector,
-        yawn_detector,
-        eye_closed_detector,
+        yawn_detector,        
         absence_prevention=absence_prevention,
-        registered_students=registered_students
+        registered_students=registered_students,
+
     )
     
-    video_processor.process()
-    # root = tk.Tk()
-    # gui = AttendanceGUI(root)
+    root = tk.Tk()
+    gui = AttendanceGUI(root)
 
-    # def update_gui():
-    #     gui.update_table()
-    #     root.after(2000, update_gui)  # GUI 갱신 주기를 2초로 설정
+    def update_gui():
+        gui.update_table()
+        root.after(1000, update_gui)
 
-    # def on_closing():
-    #     """GUI 창 닫을 때 종료 처리를 위한 함수."""
-    #     print("프로그램 종료 중...")
-    #     video_processor.video_capture_handler.release()
-    #     root.destroy()
-    #     exit(0)
+    # Start GUI in the main thread
+    update_gui()
 
-    # root.protocol("WM_DELETE_WINDOW", on_closing)
+    # Start video processing in a separate thread
+    video_thread = threading.Thread(target=video_processor.process, daemon=True)
+    video_thread.start()
 
-    # # Start GUI in the main thread
-    # update_gui()
+    # Start GUI
+    root.mainloop()
 
-    # # Start video processing in a separate thread
-    # video_thread = threading.Thread(target=video_processor.process, daemon=True)
-    # video_thread.start()
-
-    # # Start database fetching in a separate thread
-    # db_thread = threading.Thread(target=fetch_db_data, args=(gui,), daemon=True)
-    # db_thread.start()
-
-    # # Start GUI
-    # root.mainloop()
+    
