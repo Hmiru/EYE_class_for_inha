@@ -6,11 +6,12 @@ from calculation.focus_tracker import FocusTracker
 from dlib import correlation_tracker, rectangle
 from monitoring.prevent_to_go_out import AbsencePrevention
 import time
+import os
 class VideoProcessor:
 
     def __init__(self, video_capture_handler, 
                  face_detector, mouth_detector , yawn_detector, 
-                 absence_prevention, registered_students, skip_frames=40):
+                 absence_prevention, registered_students,db_path, skip_frames=40):
         self.video_capture_handler = video_capture_handler
         self.face_detector = face_detector
         self.mouth_detector = mouth_detector
@@ -26,10 +27,14 @@ class VideoProcessor:
         self.last_seen = {}
         self.registered_students = registered_students
         self.start_time = time.time()  # 출석 시작 시간 기록
+        self.db_path = os.path.abspath(db_path)
+        self._initialize_database()
 
-
-        #Initialize all students as absent in the database
-        conn = sqlite3.connect("attendance.db")
+        
+    def _initialize_database(self):
+        """DB를 초기화하고 학생 정보를 설정"""
+        conn = sqlite3.connect(self.db_path)
+        print(self.db_path)
         cursor = conn.cursor()
         for student_id in self.registered_students:
             cursor.execute('''
@@ -38,7 +43,7 @@ class VideoProcessor:
             ''', (student_id,))
         conn.commit()
         conn.close()
-        
+    
     def process(self):
         """비디오 프레임을 처리하고, 얼굴과 하품을 탐지하는 메인 루프"""
         while True:
@@ -49,7 +54,7 @@ class VideoProcessor:
                 self.frame_count += 1
                 continue
 
-            frame = cv2.resize(frame, (400, 300))  # 프레임 리사이즈
+            frame = cv2.resize(frame, (800, 600))  # 프레임 리사이즈
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # 그레이스케일 변환
 
             # 얼굴 바운딩 박스 탐지
@@ -65,6 +70,7 @@ class VideoProcessor:
 
         self.video_capture_handler.release()
         cv2.destroyAllWindows()
+        
 
 
     def _update_status(self, status, metric_value, ratio_threshold, frame_threshold,
@@ -109,7 +115,7 @@ class VideoProcessor:
 
         focus_scores = self.focus_trackers[student_id].get_focus(student_id)
     def _process_students(self, frame, gray, student_data):
-        conn = sqlite3.connect("attendance.db")
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         current_time = time.time()

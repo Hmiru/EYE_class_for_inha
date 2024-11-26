@@ -25,9 +25,20 @@ class AttendanceGUI:
 
     def update_table(self):
         """캐시에서 데이터를 읽어와 GUI를 업데이트"""
-        while not self.data_queue.empty():
-            data = self.data_queue.get()
-            self.tree.insert("", tk.END, values=data)
+        for i in self.tree.get_children():
+            try:
+                self.tree.delete(i)
+            except tk.TclError:
+                # If item is already deleted, skip it
+                continue
+
+        conn = sqlite3.connect("attendance.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM attendance ORDER BY student_id ASC")
+        rows = cursor.fetchall()
+        for row in rows:
+            self.tree.insert("", tk.END, values=row)
+        conn.close()
 
     def refresh_data(self, db_data):
         """외부에서 데이터베이스 결과를 받아 캐시에 저장"""

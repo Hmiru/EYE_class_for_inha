@@ -38,6 +38,7 @@ if __name__ == "__main__":
         yawn_detector,        
         absence_prevention=absence_prevention,
         registered_students=registered_students,
+        db_path="attendance.db",
 
     )
     
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     update_gui()
 
     # Start video processing in a separate thread
-    video_thread = threading.Thread(target=video_processor.process, daemon=True)
+    video_thread = threading.Thread(target=video_processor.process, daemon=False)
     video_thread.start()
 
     # Start GUI
