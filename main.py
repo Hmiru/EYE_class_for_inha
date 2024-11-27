@@ -17,14 +17,14 @@ if __name__ == "__main__":
 
     registered_students = load_registered_students("register/registered_faces.pkl")
 
-    #video_capture_handler = VideoCaptureHandler("video_image/three.mp4")  # 파일 영상
+    #video_capture_handler = VideoCaptureHandler("C:/Users/mirun/Pictures/Camera Roll/three.mp4")  # 파일 영상
     #video_capture_handler = VideoCaptureHandler("video_image/2girls_yawning.mp4")  # 파일 영상
     video_capture_handler = VideoCaptureHandler(0)  # 웹캠을 사용하려면 0으로 설정
 
     print("Handler initialized.")
     face_detector = FaceDetector()
     mouth_detector = MouthDetector("predictor/shape_predictor_68_face_landmarks.dat")
-    yawn_detector = YawnDetector(yawn_threshold=0.7, consecutive_frames=10)
+    yawn_detector = YawnDetector(yawn_threshold=0.5, consecutive_frames=7)
     
     absence_prevention = AbsencePrevention(
         weights_path="register/model_mobilefacenet.pth",
@@ -41,22 +41,23 @@ if __name__ == "__main__":
         db_path="attendance.db",
 
     )
+    video_processor.process()
     
-    root = tk.Tk()
-    gui = AttendanceGUI(root)
+    # root = tk.Tk()
+    # gui = AttendanceGUI(root)
 
-    def update_gui():
-        gui.update_table()
-        root.after(1000, update_gui)
+    # def update_gui():
+    #     gui.update_table()
+    #     root.after(1000, update_gui)
 
-    # Start GUI in the main thread
-    update_gui()
+    # # Start GUI in the main thread
+    # update_gui()
 
-    # Start video processing in a separate thread
-    video_thread = threading.Thread(target=video_processor.process, daemon=False)
-    video_thread.start()
+    # # Start video processing in a separate thread
+    # video_thread = threading.Thread(target=video_processor.process, daemon=False)
+    # video_thread.start()
 
-    # Start GUI
-    root.mainloop()
+    # # Start GUI
+    # root.mainloop()
 
     

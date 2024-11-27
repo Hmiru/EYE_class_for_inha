@@ -3,38 +3,31 @@ from .cumulative_calc import CumulativeCalculator
 
 class FocusTracker:
     def __init__(self, k_minutes, wY=1.0):
-        self.k_minutes = k_minutes
-        self.wY = wY
-
-        self.student_data = {}
-
-    def update_focus(self, student_id, new_yawn_detected):
         """
-        Update focus scores based on yawning and eye-closing events for each student.
+        Initialize FocusTracker for frame-wide analysis.
         """
-        # 학생별로 cumulative_calculator와 recent_calculator 초기화
-        if student_id not in self.student_data:
-            self.student_data[student_id] = {
-                "cumulative_calculator": CumulativeCalculator(w1=self.wY),
-                "recent_calculator": RecentCalculator(k_minutes=self.k_minutes, w1=self.wY),
-                "cumulative": 100,
-                "recent": 100
-            }
+        self.cumulative_calculator = CumulativeCalculator(w1=wY)
+        self.recent_calculator = RecentCalculator(k_minutes=k_minutes, w1=wY)
 
+        # Default scores for frame-level focus
+        self.cumulative = 100
+        self.recent = 100
+
+    def update_focus(self, new_yawn_detected):
         yawn_count = 1 if new_yawn_detected else 0
-        student = self.student_data[student_id]
+  
+        self.cumulative = self.cumulative_calculator.calculate_score(yawn_count)
+  
+        self.recent_calculator.update_events(yawn_count)
+        self.recent = self.recent_calculator.calculate_score()
+  
 
-        # 학생별로 집중도 점수 업데이트
-        cumulative_focus = student["cumulative_calculator"].calculate_score(yawn_count)
-        student["recent_calculator"].update_events(yawn_count)
-        recent_focus = student["recent_calculator"].calculate_score()
 
-        # 업데이트된 점수를 저장
-        student["cumulative"] = cumulative_focus
-        student["recent"] = recent_focus
-
-    def get_focus(self, student_id):
+    def get_focus(self):
         """
-        Retrieve the cumulative and recent focus scores for the specified student.
+        Retrieve the cumulative and recent focus scores for the entire frame.
         """
-        return self.student_data.get(student_id, {"cumulative": 100, "recent": 100})
+        return {
+            "cumulative": self.cumulative,
+            "recent": self.recent
+        }
