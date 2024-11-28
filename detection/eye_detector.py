@@ -1,3 +1,4 @@
+#eye_detector.py
 from detection.face_landmark_detector import FaceLandmarkDetector
 class EyeDetector:
     def __init__(self, predictor_path):

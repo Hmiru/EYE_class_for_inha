@@ -1,3 +1,4 @@
+#attendance_gui.py
 import sqlite3
 import tkinter as tk
 from tkinter import ttk, simpledialog
@@ -5,15 +6,16 @@ from tkinter import ttk, simpledialog
 import queue
 
 class AttendanceGUI:
-    def __init__(self, root):
+    def __init__(self, root,db_path="attendance.db"):
         self.root = root
+        self.db_path = db_path
         self.root.title("Attendance Monitoring System")
         self.tree = ttk.Treeview(root, columns=(
-            "Student ID", "Status", "Time", "Last Seen Time", "Presence Status", "Recent Focus", "Cumulative Focus"),
+            "Student ID", "Status", "Time", "Last Seen Time", "Presence Status"),
                                  show='headings')
 
         for col in (
-                "Student ID", "Status", "Time", "Last Seen Time", "Presence Status", "Recent Focus", "Cumulative Focus"):
+                "Student ID", "Status", "Time", "Last Seen Time", "Presence Status"):
             self.tree.heading(col, text=col)
             self.tree.column(col, anchor="center", width=120)
 
@@ -32,7 +34,7 @@ class AttendanceGUI:
                 # If item is already deleted, skip it
                 continue
 
-        conn = sqlite3.connect("attendance.db")
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM attendance ORDER BY student_id ASC")
         rows = cursor.fetchall()
@@ -52,7 +54,7 @@ class AttendanceGUI:
             current_status = self.tree.item(item, "values")[1]
             new_status = simpledialog.askstring("Update Status", f"Enter new status for Student ID {student_id} (current: {current_status}):")
             if new_status:
-                conn = sqlite3.connect("attendance.db")
+                conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
                 cursor.execute("UPDATE attendance SET status = ? WHERE student_id = ?", (new_status, student_id))
                 conn.commit()

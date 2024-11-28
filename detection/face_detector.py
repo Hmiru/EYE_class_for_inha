@@ -1,3 +1,4 @@
+#face_detector.py
 import dlib
 
 class FaceDetector:

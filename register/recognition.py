@@ -1,4 +1,4 @@
-# new_recog.py
+#recognition.py
 
 import cv2
 import torch

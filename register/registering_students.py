@@ -1,4 +1,4 @@
-# new_register.py
+# register_students.py
 
 import os
 import cv2

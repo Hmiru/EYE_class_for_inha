@@ -1,3 +1,4 @@
+#main.py
 from video_processing.video_capture_handler import VideoCaptureHandler
 from detection.face_detector import FaceDetector
 from detection.mouth_detector import MouthDetector
@@ -38,26 +39,25 @@ if __name__ == "__main__":
         yawn_detector,        
         absence_prevention=absence_prevention,
         registered_students=registered_students,
-        db_path="attendance.db",
-
+        db_path="attendance.db"
     )
-    video_processor.process()
     
-    # root = tk.Tk()
-    # gui = AttendanceGUI(root)
+    
+    root = tk.Tk()
+    gui = AttendanceGUI(root)
 
-    # def update_gui():
-    #     gui.update_table()
-    #     root.after(1000, update_gui)
+    def update_gui():
+        gui.update_table()
+        root.after(1000, update_gui)
 
-    # # Start GUI in the main thread
-    # update_gui()
+    # Start GUI in the main thread
+    update_gui()
 
-    # # Start video processing in a separate thread
-    # video_thread = threading.Thread(target=video_processor.process, daemon=False)
-    # video_thread.start()
+    # Start video processing in a separate thread
+    video_thread = threading.Thread(target=video_processor.process, daemon=False)
+    video_thread.start()
 
-    # # Start GUI
-    # root.mainloop()
+    # Start GUI
+    root.mainloop()
 
     

@@ -1,3 +1,4 @@
+#prevent_to_go_out.py
 import cv2
 import torch
 import torchvision.transforms as transforms
@@ -44,9 +45,16 @@ class AbsencePrevention:
         for student_id, reg_embeddings in self.registered_faces.items():
             reg_embeddings = reg_embeddings.flatten()
             distance = cosine(reg_embeddings, new_embedding)
+
+            # 디버깅 로그 추가
+            print(f"Comparing {student_id}: Distance = {distance}")
+
             if distance < min_distance and distance < 0.5:
                 min_distance = distance
                 recognized_name = student_id
+
+        # 최종 결과 출력
+        print(f"Recognized Name: {recognized_name}")
         return recognized_name
 
     def absence_prevention_live(self, frame, max_absence_time=5):
