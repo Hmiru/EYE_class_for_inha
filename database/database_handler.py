@@ -20,9 +20,7 @@ class DatabaseHandler:
                 status TEXT,
                 time TEXT,
                 last_seen_time TEXT,
-                presence_status TEXT,
-                recent_focus REAL,
-                cumulative_focus REAL
+                presence_status TEXT
             )
         ''')
         conn.commit()
@@ -34,8 +32,8 @@ class DatabaseHandler:
         cursor = conn.cursor()
         for student_id in registered_students:
             cursor.execute('''
-                INSERT OR REPLACE INTO attendance (student_id, status, time, last_seen_time, presence_status, recent_focus, cumulative_focus)
-                VALUES (?, '결석', NULL, NULL, 'Absent', NULL, NULL)
+                INSERT OR REPLACE INTO attendance (student_id, status, time, last_seen_time, presence_status)
+                VALUES (?, '결석', NULL, NULL, 'Absent')
             ''', (student_id,))
         conn.commit()
         conn.close()
@@ -50,7 +48,7 @@ class DatabaseHandler:
         conn.commit()
         conn.close()
 
-    def update_attendance_status(self, student_id, cumulative_focus, recent_focus, start_time):
+    def update_attendance_status(self, student_id, start_time):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         time_since_start = time.time() - start_time
         status = "지각" if time_since_start > 300 else "출석"
@@ -60,12 +58,12 @@ class DatabaseHandler:
             conn = self._get_connection()
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT OR REPLACE INTO attendance (student_id, status, time, last_seen_time, presence_status, recent_focus, cumulative_focus)
-                VALUES (?, ?, COALESCE((SELECT time FROM attendance WHERE student_id = ?), ?), ?, ?, ?, ?)
-            ''', (student_id, status, student_id, current_time, current_time, presence_status, recent_focus, cumulative_focus))
+                INSERT OR REPLACE INTO attendance (student_id, status, time, last_seen_time, presence_status)
+                VALUES (?, ?, COALESCE((SELECT time FROM attendance WHERE student_id = ?), ?), ?, ?)
+            ''', (student_id, status, student_id, current_time, current_time, presence_status))
             conn.commit()
             conn.close()
 
-            print(f"DB Updated: {student_id}, {status}, {cumulative_focus}, {recent_focus}")
+            print(f"DB Updated: {student_id}, {status}")
         except sqlite3.Error as e:
             print(f"DB Error: {e}")

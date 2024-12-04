@@ -14,9 +14,7 @@ def initialize_db():
             status TEXT,
             time TEXT,
             last_seen_time TEXT,
-            presence_status TEXT,
-            recent_focus REAL,
-            cumulative_focus REAL
+            presence_status TEXT
         )
     ''')
     conn.commit()

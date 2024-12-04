@@ -9,11 +9,11 @@ class AttendanceGUI:
         self.root = root
         self.root.title("Attendance Monitoring System")
         self.tree = ttk.Treeview(root, columns=(
-            "Student ID", "Status", "Time", "Last Seen Time", "Presence Status", "Recent Focus", "Cumulative Focus"),
+            "Student ID", "Status", "Time", "Last Seen Time", "Presence Status"),
                                  show='headings')
 
         for col in (
-                "Student ID", "Status", "Time", "Last Seen Time", "Presence Status", "Recent Focus", "Cumulative Focus"):
+                "Student ID", "Status", "Time", "Last Seen Time", "Presence Status"):
             self.tree.heading(col, text=col)
             self.tree.column(col, anchor="center", width=120)
 
