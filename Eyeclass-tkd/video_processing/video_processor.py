@@ -254,7 +254,7 @@ class VideoProcessor:
             "recent": recent_focus
         }
 
-    def _absent_monitor(self, frame, gray, student_data):
+    def _absent_monitor(self, frame, gray, student_data):#출석, 지각, 결석 db
         conn = sqlite3.connect(self.db_path)  # DB 연결
         cursor = conn.cursor()
 

@@ -4,7 +4,7 @@ from tkinter import ttk, simpledialog
 
 import queue
 
-class AttendanceGUI:
+class AttendanceGUI:#db gui
     def __init__(self, root):
         self.root = root
         self.root.title("Attendance Monitoring System")
@@ -40,12 +40,8 @@ class AttendanceGUI:
             self.tree.insert("", tk.END, values=row)
         conn.close()
 
-    def refresh_data(self, db_data):
-        """외부에서 데이터베이스 결과를 받아 캐시에 저장"""
-        for row in db_data:
-            self.data_queue.put(row)
 
-    def on_double_click(self, event):
+    def on_double_click(self, event):#더블클릭시 출석상태 변경 가능
         try:
             item = self.tree.selection()[0]
             student_id = self.tree.item(item, "values")[0]

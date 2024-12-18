@@ -17,8 +17,6 @@ if __name__ == "__main__":
 
     registered_students = load_registered_students("register/registered_faces.pkl")
 
-    # video_capture_handler = VideoCaptureHandler("C:/Users/mirun/Pictures/Camera Roll/three.mp4")  # 파일 영상
-    # video_capture_handler = VideoCaptureHandler("video_image/2girls_yawning.mp4")  # 파일 영상
     video_capture_handler = VideoCaptureHandler(0)  # 웹캠을 사용하려면 0으로 설정
     video_capture_handler.cap.set(cv2.CAP_PROP_FPS, 30)
 
