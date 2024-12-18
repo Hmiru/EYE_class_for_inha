@@ -9,6 +9,8 @@ from database.database_utils import initialize_db, load_registered_students
 import torch
 import threading
 import cv2
+from database.attendance_gui import AttendanceGUI
+import tkinter as tk
 
 if __name__ == "__main__":
     initialize_db()
@@ -44,6 +46,23 @@ if __name__ == "__main__":
         db_path="attendance.db",
     )
 
+    root = tk.Tk()
+    gui = AttendanceGUI(root)
+
+
+    def update_gui():
+        gui.update_table()
+        root.after(1000, update_gui)
+
+
+    # Start GUI in the main thread
+    update_gui()
+
     # Start video processing in a separate thread
     video_thread = threading.Thread(target=video_processor.process, daemon=False)
     video_thread.start()
+
+    # Start GUI
+    root.mainloop()
+
+

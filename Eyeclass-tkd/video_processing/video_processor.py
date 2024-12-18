@@ -115,7 +115,7 @@ class VideoProcessor:
                 self._process_frame_for_yawns(frame, gray_frame)
 
             # FPS 계산 및 표시
-            if self.frame_count % 10 == 0:  # 10프레임마다 FPS 계산
+            if self.frame_count % 40 == 0:  # 10프레임마다 FPS 계산
                 fps = self._calculate_fps()
                 self.display_fps(frame, fps)
 
@@ -259,20 +259,10 @@ class VideoProcessor:
         cursor = conn.cursor()
 
         current_time = time.time()
-        absent_students = []  # Absent 상태로 전환된 학생 ID 저장
 
         # 얼굴이 감지되지 않은 학생은 Absent로 설정
         for student_id in self.registered_students:
             if student_id not in self.last_seen or current_time - self.last_seen[student_id] > 5:
-                cursor.execute('''
-                    SELECT status FROM attendance WHERE student_id = ?
-                ''', (student_id,))
-                existing_status = cursor.fetchone()
-
-                if existing_status and existing_status[0] != '결석':  # Absent가 아닌 경우만 추가
-                    absent_students.append(student_id)
-
-                # presence_status를 Absent로 업데이트
                 cursor.execute('''
                     UPDATE attendance SET presence_status = 'Absent' WHERE student_id = ?
                 ''', (student_id,))
@@ -292,15 +282,15 @@ class VideoProcessor:
             ''', (student_id,))
             existing_record = cursor.fetchone()
 
-            if existing_record is None or existing_record[0] == '결석':  # 처음 감지되었거나 기존 상태가 Absent일 경우
+            if existing_record is None or existing_record[0] == '결석':
                 first_seen_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 time_since_start = current_time - self.start_time
 
-                # 10초 이후 얼굴이 감지된 경우 지각 처리
+                # 5분 이후 얼굴이 감지된 경우 지각 처리
                 if time_since_start <= 10:
-                    status = "Present"
+                    status = "출석"
                 else:
-                    status = "Late"
+                    status = "지각"
             else:
                 status = existing_record[0]
                 first_seen_time = existing_record[1]  # 기존의 처음 인식된 시간 유지
@@ -317,28 +307,7 @@ class VideoProcessor:
             # 디버깅용 출력
             print(f"Updating DB for student {student_id}: {status}, {last_seen_time}")
 
-            # 상태 표시
-            self.display_student_status(frame, student_id, status, presence_status, bbox)
-
-            # 이미 출석한 학생은 absent_students에서 제거
-            if student_id in absent_students:
-                absent_students.remove(student_id)
-
         conn.close()
-
-        # Absent로 전환된 학생 표시
-        self.display_absent_students(frame, absent_students)
-
-    def display_absent_students(self, frame, absent_students):
-        """Absent 상태로 전환된 학생을 화면 하단에 표시"""
-        if not absent_students:
-            return  # 표시할 학생이 없으면 종료
-
-        text_y_position = frame.shape[0] - 30  # 화면 하단에서 위로 30px 위치
-        text = "Not Present: " + ", ".join(absent_students)  # Absent 학생들의 ID를 ,로 구분하여 출력
-
-        cv2.putText(frame, text, (10, text_y_position),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
     def display_student_info(self, frame, total_yawns, cumulative_focus, recent_focus):
         """학생의 ID와 상태 정보를 바운딩 박스 위에 출력하는 함수"""
@@ -350,17 +319,3 @@ class VideoProcessor:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
         cv2.putText(frame, f"Recent Focus: {recent_focus:.1f}%", (10, text_y_position + 60),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-
-
-    def display_student_status(self, frame, student_id, status, presence_status, bbox):
-        """학생의 ID와 상태 정보를 바운딩 박스 위에 출력하는 함수"""
-        x, y, x2, y2 = bbox
-        text_y_position = y - 45  # 바운딩 박스 위에 텍스트를 표시할 y 좌표를 충분히 올림
-
-        # 텍스트 출력
-        cv2.putText(frame, f"ID: {student_id}", (x+45, text_y_position),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
-        cv2.putText(frame, f"Attendance Status: {status}", (x+45, text_y_position + 15),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-        cv2.putText(frame, f"Presence Status: {presence_status}", (x+45, text_y_position + 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
