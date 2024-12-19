@@ -1,6 +1,4 @@
-# calculator.py
 from abc import ABC, abstractmethod
-
 
 class Calculator(ABC):
     """

@@ -1,14 +1,13 @@
 import cv2
 import os
 
-# 이름 입력 받기 (각 조원별 폴더 생성)
+# 학번을 입력 받아 학번별로 얼굴 정보 저장하기 위함.
 name = input("Enter the name: ")
 train_data_dir = f"test/{name}"
 os.makedirs(train_data_dir, exist_ok=True)
 
-# 카메라 시작
 cap = cv2.VideoCapture(0)
-num_images = 10  # 각 사람당 10장의 이미지 캡처
+num_images = 10  # 각 사람당 10장의 이미지 캡처(필요에 따라 수정 가능)
 count = 0
 
 while count < num_images:
@@ -16,7 +15,6 @@ while count < num_images:
     if not ret:
         break
 
-    # 얼굴 캡처 (다양한 각도에서 직접 촬영)
     cv2.imshow('Capture Training Image', frame)
 
     # 'c' 키를 누르면 이미지 저장
@@ -37,8 +35,3 @@ while count < num_images:
 
 cap.release()
 cv2.destroyAllWindows()
-
-
-'''
-이후, 아래 있는 디렉토리도 함께 추가하여 테스트 진행
-'''

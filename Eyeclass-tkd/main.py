@@ -2,23 +2,21 @@ from video_processing.video_capture_handler import VideoCaptureHandler
 from detection.face_detector import FaceDetector
 from detection.mouth_detector import MouthDetector
 from detection.yawn_detector import YawnDetector
-from detection.face_landmark_detector import FaceLandmarkDetector
 from video_processing.video_processor import VideoProcessor
-from monitoring.prevent_to_go_out import AbsencePrevention  # AbsencePrevention import 추가
+from monitoring.prevent_to_go_out import AbsencePrevention
 from database.database_utils import initialize_db, load_registered_students
 import torch
 import threading
-import cv2
 from database.attendance_gui import AttendanceGUI
 import tkinter as tk
 
 if __name__ == "__main__":
+    #DB 초기화
     initialize_db()
 
     registered_students = load_registered_students("register/registered_faces.pkl")
 
-    video_capture_handler = VideoCaptureHandler(0)  # 웹캠을 사용하려면 0으로 설정
-    video_capture_handler.cap.set(cv2.CAP_PROP_FPS, 30)
+    video_capture_handler = VideoCaptureHandler(0)  # 시작하기 전 cam_id 확인 후 실행
 
     print("Handler initialized.")
     face_detector = FaceDetector(
@@ -31,7 +29,7 @@ if __name__ == "__main__":
         weights_path="register/model_mobilefacenet.pth",
         registered_faces_path="register/registered_faces.pkl",
         yolo_weights="register/yolov11n-face.pt",
-        device=torch.device("cpu")  # 필요에 따라 'cuda'로 변경 가능
+        device=torch.device("cpu")
     )
 
     video_processor = VideoProcessor(
@@ -52,15 +50,11 @@ if __name__ == "__main__":
         gui.update_table()
         root.after(1000, update_gui)
 
-
-    # Start GUI in the main thread
     update_gui()
 
-    # Start video processing in a separate thread
     video_thread = threading.Thread(target=video_processor.process, daemon=False)
     video_thread.start()
 
-    # Start GUI
     root.mainloop()
 
 

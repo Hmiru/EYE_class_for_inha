@@ -1,10 +1,9 @@
 import sqlite3
 import tkinter as tk
 from tkinter import ttk, simpledialog
-
 import queue
 
-class AttendanceGUI:#db gui
+class AttendanceGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Attendance Monitoring System")
@@ -40,8 +39,8 @@ class AttendanceGUI:#db gui
             self.tree.insert("", tk.END, values=row)
         conn.close()
 
-
-    def on_double_click(self, event):#더블클릭시 출석상태 변경 가능
+    # 프로그램 종료 후 출결 상태를 수동으로 변경하기 위한 함수
+    def on_double_click(self, event):
         try:
             item = self.tree.selection()[0]
             student_id = self.tree.item(item, "values")[0]

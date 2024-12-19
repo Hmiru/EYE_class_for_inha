@@ -26,6 +26,7 @@ class AbsencePrevention:
         # Load YOLO model for face detection
         self.yolo_model = YOLO(yolo_weights)
 
+    # 얼굴 임베딩 벡터를 추출하기 위한 모델 불러오는 함수
     def load_model(self, weights_path):
         model = MobileFaceNet(embedding_size=512).to(self.device)
         state_dict = torch.load(weights_path, map_location=self.device)
@@ -33,65 +34,27 @@ class AbsencePrevention:
         model.eval()
         return model
 
+    # pickle 파일로 저장된 얼굴 임베딩 벡터 정보를 불러오는 함수
     def load_registered_faces(self, registered_faces_path):
         with open(registered_faces_path, 'rb') as f:
             registered_faces = pickle.load(f)
         print("등록된 얼굴 임베딩 정보를 불러왔습니다.")
         return registered_faces
 
+    # 얼굴 인식 함수
     def recognize_face(self, new_embedding):
         min_distance = float('inf')
         recognized_name = None
         new_embedding = new_embedding.flatten()
         for student_id, reg_embeddings in self.registered_faces.items():
             reg_embeddings = reg_embeddings.flatten()
-            distance = cosine(reg_embeddings, new_embedding)
+            distance = cosine(reg_embeddings, new_embedding)    # 코사인 유사도 활용
             if distance < min_distance and distance < 0.5:
                 min_distance = distance
                 recognized_name = student_id
         return recognized_name
 
-    # def absence_prevention_live(self, frame, max_absence_time=5):
-    #     recognized_faces_info = []
-    #     absence_detected = False
-    #
-    #     fixed_size = (480, 480)
-    #     frame_resized = cv2.resize(frame, fixed_size, interpolation=cv2.INTER_AREA)
-    #
-    #     #frame = cv2.resize(frame, (480, 480), interpolation=cv2.INTER_AREA)
-    #     # YOLO face detection
-    #     results = self.yolo_model(frame_resized, imgsz=480)
-    #
-    #     # Process detected faces
-    #     current_time = time.time()
-    #     for result in results[0].boxes:
-    #         x1, y1, x2, y2 = map(int, result.xyxy[0])  # YOLO bounding box
-    #         face_img = frame_resized[y1:y2, x1:x2]
-    #         face_pil = Image.fromarray(face_img).convert('RGB')
-    #         face_tensor = self.preprocess(face_pil).unsqueeze(0).to(self.device)
-    #
-    #         with torch.no_grad():
-    #             new_embedding = self.model(face_tensor).cpu().numpy()
-    #
-    #         recognized_name = self.recognize_face(new_embedding)
-    #         if recognized_name:
-    #             self.last_seen[recognized_name] = current_time
-    #
-    #             recognized_faces_info.append({
-    #                 "student_id": recognized_name,
-    #                 "bbox": (x1, y1, x2, y2)
-    #             })
-    #
-    #     # Absence detection
-    #     for student_id, last_time in self.last_seen.items():
-    #         time_diff = current_time - last_time
-    #         if time_diff > max_absence_time:
-    #             absence_detected = True
-    #             print(f"{student_id} 이탈 감지! {time_diff:.2f}초 동안 감지되지 않음.")
-    #
-    #     print("현재 프레임에서 인식된 얼굴 정보:", recognized_faces_info)
-    #     return recognized_faces_info, absence_detected
-
+    # 이탈 방지 함수(max_absence_time은 상황에 맞게 수정 가능)
     def absence_prevention_live(self, frame, max_absence_time=5):
         recognized_faces_info = []
         absence_detected = False
@@ -150,51 +113,3 @@ class AbsencePrevention:
 
         # YOLO 탐지 결과와 얼굴 정보를 반환
         return recognized_faces_info, results[0]
-
-
-# Usage example
-if __name__ == "__main__":
-    absence_prevention = AbsencePrevention(
-        weights_path='../register/model_mobilefacenet.pth',
-        registered_faces_path='../register/registered_faces.pkl',
-        yolo_weights='../register/yolov11n-face.pt',
-        device=torch.device('cpu')
-    )
-
-    frame_count = 0
-    cap = cv2.VideoCapture(0)
-    prev_time = time.time()  # 이전 프레임 시작 시간
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        frame = cv2.resize(frame, (640, 640))
-
-        # YOLO 추론: 매 3번째 프레임에서만 실행
-        if frame_count % 5 == 0:
-            results = absence_prevention.yolo_model(frame, imgsz=320)  # YOLO 입력 해상도 축소
-            last_results = results
-        else:
-            results = last_results  # 이전 YOLO 결과 재사용
-
-        frame_count += 1
-
-        # Measure time for each frame
-        start_time = time.time()
-        absence_prevention.absence_prevention_live(frame)
-        end_time = time.time()
-
-        # Calculate FPS
-        fps = 1 / (end_time - start_time)
-        print(f"FPS: {fps:.2f}")
-
-        # Display frame with FPS
-        cv2.putText(frame, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        cv2.imshow("Absence Prevention", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()

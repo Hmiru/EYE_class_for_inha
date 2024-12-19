@@ -6,7 +6,7 @@ class VideoCaptureHandler:
         if isinstance(stream_path, str):
             self.stream_path = stream_path
         else:
-            self.stream_path = 0  # 기본적으로 웹캠(0번)으로 설정
+            self.stream_path = 0  # 웹캠으로 진행하기에 프로그램 시작하기 전 cam_id 확인 필요
 
         self.cap = cv2.VideoCapture(self.stream_path)
 

@@ -5,8 +5,9 @@ import pickle
 import torchvision.transforms as transforms
 from PIL import Image
 from model import MobileFaceNet
-from ultralytics import YOLO  # YOLOv8 및 YOLOv11 지원
+from ultralytics import YOLO
 
+# 얼굴 임베딩 벡터를 추출하기 위한 모델 불러오는 함수
 def load_model(weights_path='model_mobilefacenet.pth', device=torch.device('cpu')):
     model = MobileFaceNet(embedding_size=512).to(device)
     state_dict = torch.load(weights_path, map_location=device)
@@ -14,6 +15,7 @@ def load_model(weights_path='model_mobilefacenet.pth', device=torch.device('cpu'
     model.eval()
     return model
 
+# pre-train된 yolo를 활용하여 얼굴을 탐지하고 pre-train된 MobileFaceNet 모델을 통해 임베딩 벡터를 추출하는 함수
 def extract_embedding(image_path, model, device, preprocess, yolo_model):
     image = cv2.imread(image_path)
     if image is None:

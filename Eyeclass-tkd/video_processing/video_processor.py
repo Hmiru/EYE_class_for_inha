@@ -1,17 +1,10 @@
 # video_processor.py
 import sqlite3
 from datetime import datetime
-
 import cv2
 from calculation.focus_tracker import FocusTracker
-from dlib import correlation_tracker, rectangle
-from monitoring.prevent_to_go_out import AbsencePrevention
 import time
 import os
-import numpy as np
-import queue
-import threading
-from video_processing.preprocessor import Preprocessor
 
 class VideoProcessor:
 
@@ -51,42 +44,6 @@ class VideoProcessor:
         conn.commit()
         conn.close()
 
-    # def process(self):
-    #     """비디오 프레임을 처리하고, 얼굴과 하품을 탐지하는 메인 루프"""
-    #
-    #     fixed_size = (480, 480)
-    #     while True:
-    #         frame = self.video_capture_handler.get_frame()
-    #         if frame is None:
-    #             break
-    #         if self.frame_count % self.skip_frames != 0 and self.frame_count % 10 != 0:
-    #             self.frame_count += 1
-    #             continue
-    #         frame = cv2.resize(frame, fixed_size, interpolation=cv2.INTER_AREA)  # 프레임 리사이즈
-    #         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)# 그레이스케일 변환
-    #         recognized_faces_info, _ = self.absence_prevention.absence_prevention_live(frame)
-    #         self._absent_monitor(frame, gray, recognized_faces_info)
-    #         self.absence_prevention.absence_prevention_live(frame)
-    #         self._process_frame_for_yawns(frame, gray)
-    #
-    #         fps = self._calculate_fps()
-    #
-    #         # FPS 화면에 표시
-    #         self.display_fps(frame, fps)
-    #
-    #         # 처리된 프레임 표시
-    #         cv2.imshow("Face Detection", frame)
-    #         if cv2.waitKey(1) & 0xFF == ord('q'):
-    #             break
-    #
-    #         self.frame_count += 1
-    #
-    #     print("Video processing complete.")
-    #
-    #     self.video_capture_handler.release()
-    #
-    #     cv2.destroyAllWindows()
-
     def process(self):
         """비디오 프레임을 처리하고, 얼굴과 하품을 탐지하며 DB와 연동"""
         fixed_size = (480, 480)  # YOLO 모델과 일치하는 입력 크기
@@ -114,10 +71,10 @@ class VideoProcessor:
                 gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 self._process_frame_for_yawns(frame, gray_frame)
 
-            # FPS 계산 및 표시
-            if self.frame_count % 40 == 0:  # 10프레임마다 FPS 계산
-                fps = self._calculate_fps()
-                self.display_fps(frame, fps)
+            # FPS 계산 및 표시(필요할 경우 적용)
+            # if self.frame_count % 40 == 0:  # 10프레임마다 FPS 계산
+            #     fps = self._calculate_fps()
+            #     self.display_fps(frame, fps)
 
             # 처리된 프레임 표시
             cv2.imshow("Face Detection", frame)
@@ -254,7 +211,8 @@ class VideoProcessor:
             "recent": recent_focus
         }
 
-    def _absent_monitor(self, frame, gray, student_data):#출석, 지각, 결석 db
+    # 출결 및 이탈 db 관련 함수
+    def _absent_monitor(self, frame, gray, student_data):
         conn = sqlite3.connect(self.db_path)  # DB 연결
         cursor = conn.cursor()
 
@@ -286,7 +244,7 @@ class VideoProcessor:
                 first_seen_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 time_since_start = current_time - self.start_time
 
-                # 5분 이후 얼굴이 감지된 경우 지각 처리
+                # 5분 이후 얼굴이 감지된 경우 지각 처리(시간은 상황에 맞게 수정 가능)
                 if time_since_start <= 10:
                     status = "출석"
                 else:
@@ -305,7 +263,7 @@ class VideoProcessor:
             conn.commit()
 
             # 디버깅용 출력
-            print(f"Updating DB for student {student_id}: {status}, {last_seen_time}")
+            # print(f"Updating DB for student {student_id}: {status}, {last_seen_time}")
 
         conn.close()
 
